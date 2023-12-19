@@ -93,7 +93,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   private findAccount(account: Hex): ECPairInterface {
     if (this.getAddress(this.publicKey) === account) {
-      return ECPair.fromPrivateKey(this.privateKey)
+      return ECPair.fromPrivateKey(this.privateKey);
     }
     const foundAccount = this.wallets.find(
       (f) => this.getAddress(f.publicKey) === account
@@ -105,6 +105,9 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   private findAccountByPk(publicKey: string): ECPairInterface {
+    if (this.publicKey?.toString('hex') === publicKey) {
+      return ECPair.fromPrivateKey(this.privateKey);
+    }
     const foundAccount = this.wallets.find(f => f.publicKey.toString('hex') === publicKey);
     if (foundAccount !== undefined) {
       return foundAccount
