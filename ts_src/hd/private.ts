@@ -27,10 +27,9 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   childIndex: number = 0;
   privateKey: Buffer = ZERO_PRIVKEY;
   publicKey = ZERO_KEY;
-  wallets: ECPairInterface[] = [];
+  accounts: ECPairInterface[] = [];
 
   private seed?: Uint8Array;
-  private _index2wallet: Record<number, [string, ECPairInterface]> = {};
   private hdWallet?: HDNode;
   private root?: HDNode;
   private hdPath: string = hdPathString;
@@ -45,8 +44,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
     this.root = this.hdWallet?.derive(this.hdPath) as any;
 
-    this._index2wallet = {};
-    this.wallets = [];
+    this.accounts = [];
   }
 
   signTypedData(address: string, typedData: Record<string, unknown>) {
@@ -65,7 +63,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   getAccounts() {
-    const accounts =  this.wallets.map((w) => {
+    const accounts =  this.accounts.map((w) => {
       return this.getAddress(w.publicKey)!;
     });
     return [this.getAddress(this.publicKey!)!, ...accounts]
@@ -73,17 +71,17 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   addAccounts(number: number = 1) {
     let count = number;
-    let currentIdx = this.wallets.length === 0 ? 1 : this.wallets.length;
+    let currentIdx = 0;
     const newAddresses: string[] = [];
 
 
     while (count) {
-      const [address, wallet] = this._addressFromIndex(currentIdx);
-      if (this.wallets.includes(wallet)) {
+      const wallet = this._addressFromIndex(currentIdx);
+      if (this.accounts.includes(wallet)) {
         currentIdx++;
       } else {
-        this.wallets.push(wallet);
-        newAddresses.push(address);
+        this.accounts.push(wallet);
+        newAddresses.push(this.getAddress(wallet.publicKey)!);
         count--;
       }
     }
@@ -95,7 +93,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     if (this.getAddress(this.publicKey) === account) {
       return ECPair.fromPrivateKey(this.privateKey);
     }
-    const foundAccount = this.wallets.find(
+    const foundAccount = this.accounts.find(
       (f) => this.getAddress(f.publicKey) === account
     );
     if (foundAccount !== undefined) {
@@ -108,7 +106,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     if (this.publicKey?.toString('hex') === publicKey) {
       return ECPair.fromPrivateKey(this.privateKey);
     }
-    const foundAccount = this.wallets.find(f => f.publicKey.toString('hex') === publicKey);
+    const foundAccount = this.accounts.find(f => f.publicKey.toString('hex') === publicKey);
     if (foundAccount !== undefined) {
       return foundAccount
     }
@@ -138,7 +136,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   signMessage(address: Hex, text: string) {
     const keyPair = this._getPrivateKeyFor(
-      this.wallets
+      this.accounts
         .find((f) => this.getAddress(f.publicKey) === address)
         ?.publicKey?.toString("hex") ?? ""
     );
@@ -212,7 +210,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   private getChildCount(): number {
-    return this.wallets.length;
+    return this.accounts.length;
   }
 
   serialize() {
@@ -245,15 +243,14 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     return HDPrivateKey.deserialize(state);
   }
 
-  private _addressFromIndex(i: number): [string, ECPairInterface] {
-    if (!this._index2wallet[i]) {
+  private _addressFromIndex(i: number): ECPairInterface {
+    if (!this.accounts[i]) {
       const child = (this.root as unknown as bitcore.HDPrivateKey)?.deriveChild(i);
       const ecpair = ECPair.fromPrivateKey(Buffer.from((child as any).privateKey));
-      const address = this.getAddress(ecpair.publicKey)!;
-      this._index2wallet[i] = [address, ecpair];
+      this.accounts.push(ecpair);
     }
 
-    return this._index2wallet[i];
+    return this.accounts[i];
   }
 
   private _getPrivateKeyFor(publicKey: string) {
@@ -265,7 +262,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   private _getWalletForAccount(publicKey: string) {
-    let wallet = this.wallets.find(
+    let wallet = this.accounts.find(
       (wallet) => wallet.publicKey.toString("hex") == publicKey
     );
     if (!wallet) {
