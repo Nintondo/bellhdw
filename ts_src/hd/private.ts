@@ -153,13 +153,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   async fromOptions(options: PrivateKeyOptions) {
-    this.childIndex = 0;
-    this.seed = fromHex(options.seed);
-    this.hdWallet = hdkey.fromMasterSeed(Buffer.from(this.seed!));
-    this.root = this.hdWallet.derive(this.hdPath) as any;
-    this.publicKey = this.root!.publicKey;
-    this.privateKey = this.root!.privateKey;
-
+    this.fromSeed(Buffer.from(options.seed))
     return this;
   }
 
@@ -168,6 +162,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   fromSeed(seed: Uint8Array) {
+    this.childIndex = 0;
     this.seed = seed;
     this.hdWallet = hdkey.fromMasterSeed(Buffer.from(seed));
     this.root = this.hdWallet.derive(this.hdPath) as any;
@@ -186,11 +181,9 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     mnemonic: string,
     passphrase?: string
   ): Promise<HDPrivateKey> {
-    this.seed = await mnemonicToSeed(mnemonic, passphrase ?? "bells");
-    this.hdWallet = hdkey.fromMasterSeed(Buffer.from(this.seed!));
-    this.root = this.hdWallet.derive(this.hdPath) as any;
-    this.publicKey = this.root!.publicKey;
-    this.privateKey = this.root!.privateKey;
+    const seed = await mnemonicToSeed(mnemonic, passphrase ?? "bells");
+    this.fromSeed(seed);
+
     return this;
   }
 
@@ -249,11 +242,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   deserialize(state: SerializedHDKey) {
-    const deserialized = HDPrivateKey.deserialize(state);
-    this.fromOptions({
-      seed: toHex(deserialized.seed!)
-    });
-    return this;
+    return HDPrivateKey.deserialize(state);
   }
 
   private _addressFromIndex(i: number): [string, ECPairInterface] {
