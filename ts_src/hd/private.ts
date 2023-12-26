@@ -71,7 +71,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   addAccounts(number: number = 1) {
     let count = number;
-    let currentIdx = 0;
+    let currentIdx = this.accounts.length;
     const newAddresses: string[] = [];
 
 
