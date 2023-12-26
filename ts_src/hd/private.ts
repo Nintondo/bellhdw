@@ -77,13 +77,11 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
     while (count) {
       const wallet = this._addressFromIndex(currentIdx);
-      if (this.accounts.includes(wallet)) {
-        currentIdx++;
-      } else {
         this.accounts.push(wallet);
         newAddresses.push(this.getAddress(wallet.publicKey)!);
+        
+        currentIdx++;
         count--;
-      }
     }
 
     return newAddresses;
