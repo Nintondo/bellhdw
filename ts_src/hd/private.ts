@@ -138,9 +138,10 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   signMessage(address: Hex, text: string) {
     const account = this.findAccount(address);
-    return account
-      .sign(Buffer.from(new TextEncoder().encode(text)))
-      .toString("hex");
+    const message = new bitcore.Message(text);
+    return message.sign(
+      new bitcore.PrivateKey(account.privateKey?.toString("hex"))
+    );
   }
 
   signPersonalMessage(address: Hex, message: Hex) {
