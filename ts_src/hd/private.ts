@@ -11,6 +11,7 @@ import {
   ToSignInput,
 } from "./types";
 import { BaseWallet } from "./base";
+import * as secp from "secp256k1";
 import * as tinysecp from "bells-secp256k1";
 import { mnemonicToSeed } from "bip39";
 // @ts-ignore
@@ -55,7 +56,6 @@ class HDKey {
     var data;
 
     if (isHardened) {
-      // Hardened child
       assert(this.privateKey, "Could not derive hardened child key");
 
       var pk = this.privateKey;
@@ -76,7 +76,7 @@ class HDKey {
     if (this.privateKey) {
       try {
         hd.privateKey = Buffer.from(
-          tinysecp.privateAdd(Buffer.from(this.privateKey), IL)!
+          secp.privateKeyTweakAdd(Buffer.from(this.privateKey), IL)!
         );
       } catch (err) {
         return this.deriveChild(index + 1);
@@ -84,7 +84,7 @@ class HDKey {
     } else {
       try {
         hd.publicKey = Buffer.from(
-          tinysecp.pointAdd(Buffer.from(this.publicKey!), IL, true)!
+          secp.publicKeyTweakAdd(Buffer.from(this.publicKey!), IL, true)!
         );
       } catch (err) {
         return this.deriveChild(index + 1);
@@ -155,7 +155,6 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   changeHdPath(hdPath: string) {
     this.hdPath = hdPath;
-
     this.root = this.hdWallet?.derive(this.hdPath);
 
     this.accounts = [];
