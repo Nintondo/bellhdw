@@ -53,7 +53,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   exportPublicKey(address: string) {
     const account = this.findAccount(address);
-    return account.publicKey.toString('hex');
+    return account.publicKey.toString("hex");
   }
 
   verifyMessage(address: string, text: string, sig: string) {
@@ -63,10 +63,10 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   getAccounts() {
-    const accounts =  this.accounts.map((w) => {
+    const accounts = this.accounts.map((w) => {
       return this.getAddress(w.publicKey)!;
     });
-    return [this.getAddress(this.publicKey!)!, ...accounts]
+    return [this.getAddress(this.publicKey!)!, ...accounts];
   }
 
   addAccounts(number: number = 1) {
@@ -74,13 +74,12 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     let currentIdx = this.accounts.length;
     const newAddresses: string[] = [];
 
-
     while (count) {
       const wallet = this._addressFromIndex(currentIdx);
-        newAddresses.push(this.getAddress(wallet.publicKey)!);
-        
-        currentIdx++;
-        count--;
+      newAddresses.push(this.getAddress(wallet.publicKey)!);
+
+      currentIdx++;
+      count--;
     }
 
     return newAddresses;
@@ -96,18 +95,24 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     if (foundAccount !== undefined) {
       return foundAccount;
     }
-    throw new Error(`HDPrivateKey: Account with address ${account} not founded`);
+    throw new Error(
+      `HDPrivateKey: Account with address ${account} not founded`
+    );
   }
 
   private findAccountByPk(publicKey: string): ECPairInterface {
-    if (this.publicKey?.toString('hex') === publicKey) {
+    if (this.publicKey?.toString("hex") === publicKey) {
       return ECPair.fromPrivateKey(this.privateKey);
     }
-    const foundAccount = this.accounts.find(f => f.publicKey.toString('hex') === publicKey);
+    const foundAccount = this.accounts.find(
+      (f) => f.publicKey.toString("hex") === publicKey
+    );
     if (foundAccount !== undefined) {
-      return foundAccount
+      return foundAccount;
     }
-    throw new Error(`HDPrivateKey: Account with public key ${publicKey} not founded`);
+    throw new Error(
+      `HDPrivateKey: Account with public key ${publicKey} not founded`
+    );
   }
 
   exportAccount(address: Hex) {
@@ -132,15 +137,12 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   signMessage(address: Hex, text: string) {
-    const keyPair = this._getPrivateKeyFor(
-      this.accounts
-        .find((f) => this.getAddress(f.publicKey) === address)
-        ?.publicKey?.toString("hex") ?? ""
-    );
-    const message = new bitcore.Message(text);
-    return message.sign(
-      new bitcore.PrivateKey(keyPair.privateKey?.toString("hex"))
-    );
+    const account = this.accounts.find(
+      (f) => this.getAddress(f.publicKey) === address
+    )!;
+    return account
+      .sign(Buffer.from(new TextEncoder().encode(text)))
+      .toString("hex");
   }
 
   signPersonalMessage(address: Hex, message: Hex) {
@@ -148,7 +150,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   async fromOptions(options: PrivateKeyOptions) {
-    this.fromSeed(Buffer.from(options.seed))
+    this.fromSeed(Buffer.from(options.seed));
     return this;
   }
 
@@ -242,30 +244,16 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   private _addressFromIndex(i: number): ECPairInterface {
     if (!this.accounts[i]) {
-      const child = (this.root as unknown as bitcore.HDPrivateKey)?.deriveChild(i);
-      const ecpair = ECPair.fromPrivateKey(Buffer.from((child as any).privateKey));
+      const child = (this.root as unknown as bitcore.HDPrivateKey)?.deriveChild(
+        i
+      );
+      const ecpair = ECPair.fromPrivateKey(
+        Buffer.from((child as any).privateKey)
+      );
       this.accounts.push(ecpair);
     }
 
     return this.accounts[i];
-  }
-
-  private _getPrivateKeyFor(publicKey: string) {
-    if (!publicKey) {
-      throw new Error("Must specify publicKey.");
-    }
-    const wallet = this._getWalletForAccount(publicKey);
-    return wallet;
-  }
-
-  private _getWalletForAccount(publicKey: string) {
-    let wallet = this.accounts.find(
-      (wallet) => wallet.publicKey.toString("hex") == publicKey
-    );
-    if (!wallet) {
-      throw new Error("Simple Keyring - Unable to find matching publicKey.");
-    }
-    return wallet;
   }
 }
 
