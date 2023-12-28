@@ -137,9 +137,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   signMessage(address: Hex, text: string) {
-    const account = this.accounts.find(
-      (f) => this.getAddress(f.publicKey) === address
-    )!;
+    const account = this.findAccount(address);
     return account
       .sign(Buffer.from(new TextEncoder().encode(text)))
       .toString("hex");
