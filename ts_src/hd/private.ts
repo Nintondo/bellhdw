@@ -57,7 +57,8 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   verifyMessage(address: string, text: string, sig: string) {
     const account = this.findAccount(address);
-    return account.verify(Buffer.from(text), Buffer.from(sig, "base64"));
+    const hash = sha256(text);
+    return account.verify(Buffer.from(hash), Buffer.from(sig, "base64"));
   }
 
   getAccounts() {
