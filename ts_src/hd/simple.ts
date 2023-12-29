@@ -5,6 +5,7 @@ import { BaseWallet } from "./base";
 import * as tinysecp from "bells-secp256k1";
 import ECPairFactory, { ECPairInterface } from "belpair";
 import { Psbt } from "belcoinjs-lib";
+import { sha256 } from "@noble/hashes/sha256";
 
 const ECPair = ECPairFactory(tinysecp);
 
@@ -105,8 +106,8 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
   signMessage(_address: string, message: string) {
     this.initPair();
 
-    const encoded = new TextEncoder().encode(message);
-    return bytesToHex(this.pair!.sign(Buffer.from(encoded))!);
+    const encoded = sha256(message);
+    return bytesToHex(this.pair!.sign(Buffer.from(encoded)));
   }
 
   signPersonalMessage(address: string, message: string) {

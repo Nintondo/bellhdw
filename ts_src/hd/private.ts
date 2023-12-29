@@ -17,6 +17,7 @@ import { mnemonicToSeed } from "bip39";
 import ECPairFactory, { ECPairInterface } from "belpair";
 import { Psbt, networks } from "belcoinjs-lib";
 import HDKey from "browser-hdkey";
+import { sha256 } from "@noble/hashes/sha256";
 
 const ECPair = ECPairFactory(tinysecp);
 
@@ -135,7 +136,8 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   signMessage(address: Hex, text: string) {
     const account = this.findAccount(address);
-    return account.sign(Buffer.from(text)).toString("base64");
+    const hash = sha256(text);
+    return account.sign(Buffer.from(hash)).toString("base64");
   }
 
   signPersonalMessage(address: Hex, message: Hex) {

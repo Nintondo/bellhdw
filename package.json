@@ -1,6 +1,6 @@
 {
   "name": "bellhdw",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Client-side Bitcoin JavaScript library",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
