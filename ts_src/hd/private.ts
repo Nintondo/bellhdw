@@ -11,131 +11,16 @@ import {
   ToSignInput,
 } from "./types";
 import { BaseWallet } from "./base";
-import * as secp from "secp256k1";
 import * as tinysecp from "bells-secp256k1";
 import { mnemonicToSeed } from "bip39";
 // @ts-ignore
 import ECPairFactory, { ECPairInterface } from "belpair";
 import { Psbt, networks } from "belcoinjs-lib";
-
-const HARDENED_OFFSET = 0x80000000;
-const MASTER_SECRET = Buffer.from("Bitcoin seed", "utf8");
+import HDKey from "browser-hdkey";
 
 const ECPair = ECPairFactory(tinysecp);
 
-const crypto = require("crypto");
 const hdPathString = "m/44'/0'/0'/0";
-
-const assert = (expression: any, message: string) => {
-  if (!expression) {
-    throw new Error(message);
-  }
-};
-
-const BITCOIN_VERSIONS = { private: 0x0488ade4, public: 0x0488b21e };
-
-class HDKey {
-  private versions = BITCOIN_VERSIONS;
-  publicKey?: Buffer;
-  privateKey?: Buffer;
-  chainCode?: Buffer;
-
-  private depth = 0;
-
-  constructor(versions?: { private: number; public: number }) {
-    if (versions) {
-      this.versions = versions;
-    }
-  }
-
-  deriveChild(index: number): HDKey {
-    var isHardened = index >= HARDENED_OFFSET;
-    var indexBuffer = Buffer.allocUnsafe(4);
-    indexBuffer.writeUInt32BE(index, 0);
-
-    var data;
-
-    if (isHardened) {
-      assert(this.privateKey, "Could not derive hardened child key");
-
-      var pk = this.privateKey;
-      var zb = Buffer.alloc(1, 0);
-      pk = Buffer.concat([zb, pk!]);
-
-      data = Buffer.concat([pk, indexBuffer]);
-    } else {
-      data = Buffer.concat([this.publicKey!, indexBuffer]);
-    }
-
-    var I = crypto.createHmac("sha512", this.chainCode).update(data).digest();
-    var IL = I.slice(0, 32);
-    var IR = I.slice(32);
-
-    var hd = new HDKey(this.versions);
-
-    if (this.privateKey) {
-      try {
-        hd.privateKey = Buffer.from(
-          secp.privateKeyTweakAdd(Buffer.from(this.privateKey), IL)!
-        );
-      } catch (err) {
-        return this.deriveChild(index + 1);
-      }
-    } else {
-      try {
-        hd.publicKey = Buffer.from(
-          secp.publicKeyTweakAdd(Buffer.from(this.publicKey!), IL, true)!
-        );
-      } catch (err) {
-        return this.deriveChild(index + 1);
-      }
-    }
-
-    hd.chainCode = IR;
-    hd.depth = this.depth + 1;
-
-    return hd;
-  }
-
-  static fromMasterSeed(seedBuffer: Buffer): HDKey {
-    const I = crypto
-      .createHmac("sha512", MASTER_SECRET)
-      .update(seedBuffer)
-      .digest();
-    const IL = I.slice(0, 32);
-    const IR = I.slice(32);
-
-    const hdkey = new HDKey();
-    hdkey.chainCode = IR;
-    hdkey.privateKey = IL;
-
-    return hdkey;
-  }
-
-  derive(path: string) {
-    if (path === "m" || path === "M" || path === "m'" || path === "M'") {
-      return this;
-    }
-
-    let entries = path.split("/");
-    let hdkey: HDKey = this;
-    entries.forEach(function (c, i) {
-      if (i === 0) {
-        assert(/^[mM]{1}/.test(c), 'Path must start with "m" or "M"');
-        return;
-      }
-
-      const hardened = c.length > 1 && c[c.length - 1] === "'";
-      let childIndex = parseInt(c, 10); // & (HARDENED_OFFSET - 1)
-      assert(childIndex < HARDENED_OFFSET, "Invalid index");
-      if (hardened) childIndex += HARDENED_OFFSET;
-
-      hdkey = hdkey.deriveChild(childIndex);
-    });
-
-    return hdkey;
-  }
-}
 
 class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   childIndex: number = 0;
@@ -352,7 +237,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   private _addressFromIndex(i: number): ECPairInterface {
     if (!this.accounts[i]) {
-      const child = (this.root as any)?.deriveChild(i);
+      const child = this.root?.deriveChild(i);
       const ecpair = ECPair.fromPrivateKey(
         Buffer.from((child as any).privateKey)
       );
