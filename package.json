@@ -1,6 +1,6 @@
 {
   "name": "bellhdw",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Client-side Bitcoin JavaScript library",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -39,7 +39,7 @@
     "@noble/hashes": "^1.3.2",
     "belcoinjs-lib": "^0.0.3",
     "bells-secp256k1": "^0.1.0",
-    "belpair": "^0.0.4",
+    "belpair": "^0.0.5",
     "bip39": "^3.1.0",
     "bn.js": "^5.2.1",
     "browser-hdkey": "^0.1.5"
