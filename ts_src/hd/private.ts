@@ -13,9 +13,8 @@ import {
 import { BaseWallet } from "./base";
 import * as tinysecp from "bells-secp256k1";
 import { mnemonicToSeed } from "bip39";
-// @ts-ignore
 import ECPairFactory, { ECPairInterface } from "belpair";
-import { Psbt, networks } from "belcoinjs-lib";
+import { Psbt } from "belcoinjs-lib";
 import HDKey from "browser-hdkey";
 import { sha256 } from "@noble/hashes/sha256";
 
@@ -124,14 +123,9 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
     inputs.map((i) => {
       account = this.findAccountByPk(i.publicKey);
-      psbt.signInput(
-        i.index,
-        ECPair.fromPrivateKey(account.privateKey!, {
-          network: networks.bitcoin,
-        }),
-        i.sighashTypes
-      );
+      psbt.signInput(i.index, account, i.sighashTypes);
     });
+
     psbt.finalizeAllInputs();
   }
 
