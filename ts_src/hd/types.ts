@@ -54,13 +54,9 @@ export type Keyring<State> = {
   exportPublicKey(address: Hex): string;
   verifyMessage(address: Hex, text: string, sig: string): boolean;
   signPsbt(psbt: Psbt, inputs: ToSignInput[]): void;
-  signMessage(address: Hex, message: Hex, seed: Uint8Array): string;
-  signPersonalMessage(address: Hex, message: Hex, seed: Uint8Array): string;
-  signTypedData(
-    address: Hex,
-    typedData: Record<string, unknown>,
-    seed: Uint8Array
-  ): string;
+  signMessage(address: Hex, message: Hex): string;
+  signPersonalMessage(address: Hex, message: Hex): string;
+  signTypedData(address: Hex, typedData: Record<string, unknown>): string;
 };
 
 export const DISALLOWED_CHILD_METHODS: (keyof Keyring<any>)[] = [
