@@ -19,6 +19,7 @@ interface SerializedBase {
 export interface SerializedHDKey extends SerializedBase {
   seed: string;
   numberOfAccounts?: number;
+  hideRoot?: boolean;
 }
 
 export interface SerializedSimpleKey extends SerializedBase {

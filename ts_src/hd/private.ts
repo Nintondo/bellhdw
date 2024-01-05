@@ -23,6 +23,8 @@ const ECPair = ECPairFactory(tinysecp);
 const hdPathString = "m/44'/0'/0'/0";
 
 class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
+  hideRoot?: boolean;
+
   childIndex: number = 0;
   privateKey: Buffer = ZERO_PRIVKEY;
   publicKey = ZERO_KEY;
@@ -64,6 +66,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     const accounts = this.accounts.map((w) => {
       return this.getAddress(w.publicKey)!;
     });
+    if (this.hideRoot) return accounts;
     return [this.getAddress(this.publicKey!)!, ...accounts];
   }
 
@@ -84,8 +87,10 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   private findAccount(account: Hex): ECPairInterface {
-    if (this.getAddress(this.publicKey) === account) {
-      return ECPair.fromPrivateKey(this.privateKey);
+    if (!this.hideRoot) {
+      if (this.getAddress(this.publicKey) === account) {
+        return ECPair.fromPrivateKey(this.privateKey);
+      }
     }
     const foundAccount = this.accounts.find(
       (f) => this.getAddress(f.publicKey) === account
@@ -99,18 +104,13 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   private findAccountByPk(publicKey: string): ECPairInterface {
-    if (this.publicKey?.toString("hex") === publicKey) {
-      return ECPair.fromPrivateKey(this.privateKey);
+    try {
+      return this.findAccount(this.getAddress(Buffer.from(publicKey, "hex"))!);
+    } catch {
+      throw new Error(
+        `HDPrivateKey: Account with public key ${publicKey} not founded`
+      );
     }
-    const foundAccount = this.accounts.find(
-      (f) => f.publicKey.toString("hex") === publicKey
-    );
-    if (foundAccount !== undefined) {
-      return foundAccount;
-    }
-    throw new Error(
-      `HDPrivateKey: Account with public key ${publicKey} not founded`
-    );
   }
 
   exportAccount(address: Hex) {
@@ -148,11 +148,12 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     return new this().fromOptions(options);
   }
 
-  fromSeed(seed: Uint8Array) {
+  fromSeed(seed: Uint8Array, hideRoot?: boolean) {
     this.childIndex = 0;
     this.seed = seed;
     this.hdWallet = HDKey.fromMasterSeed(Buffer.from(seed));
     this.root = this.hdWallet.derive(this.hdPath);
+    this.hideRoot = hideRoot;
 
     this.privateKey = this.root.privateKey!;
     this.publicKey = this.root.publicKey!;
@@ -160,29 +161,41 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     return this;
   }
 
-  static fromSeed(seed: Uint8Array): HDPrivateKey {
-    return new this().fromSeed(seed);
+  static fromSeed(seed: Uint8Array, hideRoot?: boolean): HDPrivateKey {
+    return new this().fromSeed(seed, hideRoot);
   }
 
-  async fromMnemonic(
-    mnemonic: string,
-    passphrase?: string
-  ): Promise<HDPrivateKey> {
+  async fromMnemonic({
+    mnemonic,
+    passphrase,
+    hideRoot,
+  }: {
+    mnemonic: string;
+    passphrase?: string;
+    hideRoot?: boolean;
+  }): Promise<HDPrivateKey> {
     const seed = await mnemonicToSeed(mnemonic, passphrase ?? "bells");
-    this.fromSeed(seed);
+    this.fromSeed(seed, hideRoot);
 
     return this;
   }
 
   static fromMnemonic(
     mnemonic: string,
-    passphrase?: string
+    passphrase?: string,
+    hideRoot?: boolean
   ): Promise<HDPrivateKey> {
-    return new this().fromMnemonic(mnemonic, passphrase);
+    return new this().fromMnemonic({
+      mnemonic,
+      passphrase,
+      hideRoot,
+    });
   }
 
   fromPhrase(phrase: string): HDPrivateKey {
-    this.fromMnemonic(phrase);
+    this.fromMnemonic({
+      mnemonic: phrase,
+    });
     return this;
   }
 
@@ -221,6 +234,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
     const root = HDPrivateKey.fromSeed(fromHex(opts.seed));
     root.addressType = opts.addressType;
+    root.hideRoot = opts.hideRoot;
 
     if (!opts.numberOfAccounts) return root;
 
