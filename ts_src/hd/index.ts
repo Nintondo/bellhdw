@@ -2,9 +2,11 @@ import HDPrivateKey from "./private";
 import SimpleKey from "./simple";
 import { AddressType, Keyring } from "./types";
 
-
-export async function fromMnemonic(mnemonic: string): Promise<HDPrivateKey> {
-  return await HDPrivateKey.fromMnemonic(mnemonic);
+export async function fromMnemonic(
+  mnemonic: string,
+  hideRoot?: boolean
+): Promise<HDPrivateKey> {
+  return await HDPrivateKey.fromMnemonic({ mnemonic, hideRoot });
 }
 
 export function fromPrivateKey(privateKey: Uint8Array): SimpleKey {

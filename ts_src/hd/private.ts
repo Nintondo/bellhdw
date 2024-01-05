@@ -180,11 +180,15 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     return this;
   }
 
-  static fromMnemonic(
-    mnemonic: string,
-    passphrase?: string,
-    hideRoot?: boolean
-  ): Promise<HDPrivateKey> {
+  static fromMnemonic({
+    mnemonic,
+    passphrase,
+    hideRoot,
+  }: {
+    mnemonic: string;
+    passphrase?: string;
+    hideRoot?: boolean;
+  }): Promise<HDPrivateKey> {
     return new this().fromMnemonic({
       mnemonic,
       passphrase,
