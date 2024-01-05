@@ -165,6 +165,10 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     return new this().fromSeed(seed, hideRoot);
   }
 
+  toggleHideRoot(): void {
+    this.hideRoot = !this.hideRoot;
+  }
+
   async fromMnemonic({
     mnemonic,
     passphrase,

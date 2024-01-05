@@ -45,9 +45,11 @@ export enum AddressType {
 
 export type Keyring<State> = {
   addressType?: AddressType;
+  hideRoot?: boolean;
   generate?: (seed: Uint8Array, entropy: Uint8Array) => Keyring<State>;
 
   getAccounts(): Hex[];
+  toggleHideRoot?(): void;
   addAccounts?(number: number): string[];
   serialize(): State;
   deserialize(state: State): Keyring<State>;
