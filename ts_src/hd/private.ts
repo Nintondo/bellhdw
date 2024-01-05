@@ -167,6 +167,9 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   toggleHideRoot(): void {
     this.hideRoot = !this.hideRoot;
+    if (!this.accounts.length) {
+      this.addAccounts();
+    }
   }
 
   async fromMnemonic({
