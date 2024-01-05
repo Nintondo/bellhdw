@@ -158,6 +158,8 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     this.privateKey = this.root.privateKey!;
     this.publicKey = this.root.publicKey!;
 
+    this.addAccounts();
+
     return this;
   }
 
