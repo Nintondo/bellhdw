@@ -9,6 +9,7 @@ import {
   SerializedHDKey,
   Hex,
   ToSignInput,
+  AddressType,
 } from "./types";
 import { BaseWallet } from "./base";
 import * as tinysecp from "bells-secp256k1";
@@ -140,7 +141,9 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }
 
   async fromOptions(options: PrivateKeyOptions) {
-    this.fromSeed(Buffer.from(options.seed));
+    this.fromSeed({
+      seed: Buffer.from(options.seed),
+    });
     return this;
   }
 
@@ -148,7 +151,15 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     return new this().fromOptions(options);
   }
 
-  fromSeed(seed: Uint8Array, hideRoot?: boolean) {
+  fromSeed({
+    seed,
+    hideRoot,
+    addressType,
+  }: {
+    seed: Uint8Array;
+    hideRoot?: boolean;
+    addressType?: AddressType;
+  }) {
     this.childIndex = 0;
     this.seed = seed;
     this.hdWallet = HDKey.fromMasterSeed(Buffer.from(seed));
@@ -158,13 +169,27 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     this.privateKey = this.root.privateKey!;
     this.publicKey = this.root.publicKey!;
 
+    this.addressType = addressType;
+
     this.addAccounts();
 
     return this;
   }
 
-  static fromSeed(seed: Uint8Array, hideRoot?: boolean): HDPrivateKey {
-    return new this().fromSeed(seed, hideRoot);
+  static fromSeed({
+    seed,
+    hideRoot,
+    addressType,
+  }: {
+    seed: Uint8Array;
+    hideRoot?: boolean;
+    addressType?: AddressType;
+  }): HDPrivateKey {
+    return new this().fromSeed({
+      seed,
+      hideRoot,
+      addressType,
+    });
   }
 
   toggleHideRoot(): void {
@@ -178,13 +203,19 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     mnemonic,
     passphrase,
     hideRoot,
+    addressType,
   }: {
     mnemonic: string;
     passphrase?: string;
     hideRoot?: boolean;
+    addressType?: AddressType;
   }): Promise<HDPrivateKey> {
     const seed = await mnemonicToSeed(mnemonic, passphrase ?? "bells");
-    this.fromSeed(seed, hideRoot);
+    this.fromSeed({
+      seed,
+      hideRoot,
+      addressType,
+    });
 
     return this;
   }
@@ -203,17 +234,6 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
       passphrase,
       hideRoot,
     });
-  }
-
-  fromPhrase(phrase: string): HDPrivateKey {
-    this.fromMnemonic({
-      mnemonic: phrase,
-    });
-    return this;
-  }
-
-  static fromPhrase(phrase: string): HDPrivateKey {
-    return new this().fromPhrase(phrase);
   }
 
   fromPrivateKey(_key: Uint8Array) {
@@ -245,7 +265,9 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
       );
     }
 
-    const root = HDPrivateKey.fromSeed(fromHex(opts.seed));
+    const root = HDPrivateKey.fromSeed({
+      seed: fromHex(opts.seed),
+    });
     root.addressType = opts.addressType;
     root.hideRoot = opts.hideRoot;
 
