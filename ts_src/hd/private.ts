@@ -274,9 +274,6 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
       addressType: opts.addressType,
     });
 
-    if (opts.hideRoot ? opts.numberOfAccounts <= 1 : opts.numberOfAccounts)
-      return root;
-
     root.addAccounts(opts.numberOfAccounts);
     return root;
   }
