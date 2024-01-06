@@ -171,7 +171,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
     this.addressType = addressType;
 
-    this.addAccounts();
+    if (this.hideRoot) this.addAccounts();
 
     return this;
   }
@@ -270,13 +270,16 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
     const root = HDPrivateKey.fromSeed({
       seed: fromHex(opts.seed),
+      hideRoot: opts.hideRoot,
+      addressType: opts.addressType,
     });
-    root.addressType = opts.addressType;
-    root.hideRoot = opts.hideRoot;
 
-    if (!opts.numberOfAccounts) return root;
+    if (opts.hideRoot ? opts.numberOfAccounts <= 1 : opts.numberOfAccounts)
+      return root;
 
-    root.addAccounts(opts.numberOfAccounts);
+    root.addAccounts(
+      opts.hideRoot ? opts.numberOfAccounts - 1 : opts.numberOfAccounts
+    );
     return root;
   }
 
