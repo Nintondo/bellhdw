@@ -1,6 +1,6 @@
 {
   "name": "bellhdw",
-  "version": "0.5.11",
+  "version": "0.5.12",
   "description": "Client-side Bitcoin JavaScript library",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -42,7 +42,7 @@
     "belpair": "^0.0.6",
     "bip39": "^3.1.0",
     "bn.js": "^5.2.1",
-    "browser-hdkey": "^0.1.6"
+    "browser-hdkey": "^0.1.7"
   },
   "devDependencies": {
     "@types/hdkey": "^2.0.3",
