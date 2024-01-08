@@ -3,7 +3,7 @@ import {
   hexToBytes as fromHex,
 } from "@noble/hashes/utils";
 import { ZERO_KEY, ZERO_PRIVKEY } from "./common";
-import {
+import type {
   Keyring,
   PrivateKeyOptions,
   SerializedHDKey,
@@ -170,8 +170,6 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     this.publicKey = this.root.publicKey!;
 
     this.addressType = addressType;
-
-    if (this.hideRoot) this.addAccounts();
 
     return this;
   }
