@@ -72,7 +72,14 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
   }
 
   static deserialize(state: SerializedSimpleKey) {
-    const pair = ECPair.fromWIF(state.privateKey);
+    let pair: ECPairInterface | undefined;
+
+    if (state.isHex) {
+      pair = ECPair.fromPrivateKey(Buffer.from(state.privateKey, "hex"));
+    } else {
+      pair = ECPair.fromWIF(state.privateKey);
+    }
+
     const wallet = new this(pair.privateKey!);
     wallet.initPair();
     wallet.addressType = state.addressType;

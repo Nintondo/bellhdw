@@ -24,6 +24,7 @@ export interface SerializedHDKey extends SerializedBase {
 
 export interface SerializedSimpleKey extends SerializedBase {
   privateKey: string;
+  isHex?: boolean;
 }
 
 export type Hex = string;
