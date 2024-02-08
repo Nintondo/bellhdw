@@ -110,11 +110,25 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
     psbt.finalizeAllInputs();
   }
 
-  signAllInputsInPsbt(psbt: Psbt) {
+  signAllInputsInPsbt(psbt: Psbt, accountAddress: string) {
     if (this.pair === undefined)
       throw new Error("Cannot sign all inputs since pair is undefined");
+    if (accountAddress !== this.getAddress(this.publicKey))
+      throw new Error(
+        "Provided account address does not match the wallet's address"
+      );
     psbt.signAllInputs(this.pair!);
-    return psbt.toHex();
+    return {
+      signatures: psbt.data.inputs.map((i) => {
+        if (
+          i.partialSig &&
+          i.partialSig[0] &&
+          i.partialSig[0].signature.length
+        ) {
+          return i.partialSig[0].signature.toString("hex");
+        }
+      }),
+    };
   }
 
   signMessage(_address: string, message: string) {

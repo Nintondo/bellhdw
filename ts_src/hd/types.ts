@@ -61,6 +61,10 @@ export type Keyring<State> = {
   signMessage(address: Hex, message: Hex): string;
   signPersonalMessage(address: Hex, message: Hex): string;
   signTypedData(address: Hex, typedData: Record<string, unknown>): string;
+  signAllInputsInPsbt(
+    psbt: Psbt,
+    accountAddress: string
+  ): { signatures: (string | undefined)[] };
 };
 
 export const DISALLOWED_CHILD_METHODS: (keyof Keyring<any>)[] = [

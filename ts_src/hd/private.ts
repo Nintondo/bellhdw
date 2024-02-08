@@ -133,7 +133,17 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   signAllInputsInPsbt(psbt: Psbt, accountAddress: string) {
     const account = this.findAccount(accountAddress);
     psbt.signAllInputs(account);
-    return psbt.toHex();
+    return {
+      signatures: psbt.data.inputs.map((i) => {
+        if (
+          i.partialSig &&
+          i.partialSig[0] &&
+          i.partialSig[0].signature.length
+        ) {
+          return i.partialSig[0].signature.toString("hex");
+        }
+      }),
+    };
   }
 
   signMessage(address: Hex, text: string) {
