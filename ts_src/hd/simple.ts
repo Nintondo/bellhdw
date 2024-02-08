@@ -110,6 +110,13 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
     psbt.finalizeAllInputs();
   }
 
+  signAllInputsInPsbt(psbt: Psbt) {
+    if (this.pair === undefined)
+      throw new Error("Cannot sign all inputs since pair is undefined");
+    psbt.signAllInputs(this.pair!);
+    return psbt.toHex();
+  }
+
   signMessage(_address: string, message: string) {
     this.initPair();
 
