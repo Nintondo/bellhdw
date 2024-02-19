@@ -146,6 +146,26 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     };
   }
 
+  signInputsWithoutFinalizing(
+    psbt: Psbt,
+    inputs: ToSignInput[]
+  ): {
+    inputIndex: number;
+    partialSig: { pubkey: Buffer; signature: Buffer }[];
+  }[] {
+    let account: ECPairInterface | undefined;
+
+    inputs.map((i) => {
+      account = this.findAccountByPk(i.publicKey);
+      psbt.signInput(i.index, account, i.sighashTypes);
+    });
+
+    return psbt.data.inputs.map((f, i) => ({
+      inputIndex: i,
+      partialSig: f.partialSig?.flatMap((p) => p) ?? [],
+    }));
+  }
+
   signMessage(address: Hex, text: string) {
     const account = this.findAccount(address);
     const hash = sha256(text);

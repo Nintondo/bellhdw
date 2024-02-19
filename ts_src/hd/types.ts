@@ -65,6 +65,13 @@ export type Keyring<State> = {
     psbt: Psbt,
     accountAddress: string
   ): { signatures: (string | undefined)[] };
+  signInputsWithoutFinalizing(
+    psbt: Psbt,
+    inputs: ToSignInput[]
+  ): {
+    inputIndex: number;
+    partialSig: { pubkey: Buffer; signature: Buffer }[];
+  }[];
 };
 
 export const DISALLOWED_CHILD_METHODS: (keyof Keyring<any>)[] = [

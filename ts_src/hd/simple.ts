@@ -111,6 +111,7 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
   }
 
   signAllInputsInPsbt(psbt: Psbt, accountAddress: string) {
+    this.initPair();
     if (this.pair === undefined)
       throw new Error("Cannot sign all inputs since pair is undefined");
     if (accountAddress !== this.getAddress(this.publicKey))
@@ -129,6 +130,25 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
         }
       }),
     };
+  }
+
+  signInputsWithoutFinalizing(
+    psbt: Psbt,
+    inputs: ToSignInput[]
+  ): {
+    inputIndex: number;
+    partialSig: { pubkey: Buffer; signature: Buffer }[];
+  }[] {
+    this.initPair();
+    if (this.pair === undefined)
+      throw new Error("Cannot sign inputs since pair is undefined");
+    for (let i of inputs) {
+      psbt.signInput(i.index, this.pair!, i.sighashTypes);
+    }
+    return psbt.data.inputs.map((f, i) => ({
+      inputIndex: i,
+      partialSig: f.partialSig?.flatMap((p) => p) ?? [],
+    }));
   }
 
   signMessage(_address: string, message: string) {
