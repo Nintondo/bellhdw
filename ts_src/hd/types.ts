@@ -4,6 +4,22 @@ export type Base58String = string;
 
 export interface PrivateKeyOptions {
   seed: string;
+  hdPath?: string;
+}
+
+export interface FromSeedOpts {
+  seed: Uint8Array;
+  hideRoot?: boolean;
+  addressType?: AddressType;
+  hdPath?: string;
+}
+
+export interface FromMnemonicOpts {
+  mnemonic: string;
+  passphrase?: string;
+  hideRoot?: boolean;
+  addressType?: AddressType;
+  hdPath?: string;
 }
 
 export interface PublicKeyOptions
@@ -20,6 +36,7 @@ export interface SerializedHDKey extends SerializedBase {
   seed: string;
   numberOfAccounts?: number;
   hideRoot?: boolean;
+  hdPath?: string;
 }
 
 export interface SerializedSimpleKey extends SerializedBase {

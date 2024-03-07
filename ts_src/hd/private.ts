@@ -9,7 +9,8 @@ import type {
   SerializedHDKey,
   Hex,
   ToSignInput,
-  AddressType,
+  FromSeedOpts,
+  FromMnemonicOpts,
 } from "./types";
 import { BaseWallet } from "./base";
 import * as tinysecp from "bells-secp256k1";
@@ -21,7 +22,7 @@ import { sha256 } from "@noble/hashes/sha256";
 
 const ECPair = ECPairFactory(tinysecp);
 
-const hdPathString = "m/44'/0'/0'/0";
+const DEFAULT_HD_PATH = "m/44'/0'/0'/0";
 
 class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   hideRoot?: boolean;
@@ -34,7 +35,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   private seed?: Uint8Array;
   private hdWallet?: HDKey;
   private root?: HDKey;
-  private hdPath: string = hdPathString;
+  private hdPath: string = DEFAULT_HD_PATH;
 
   constructor(options?: PrivateKeyOptions) {
     super();
@@ -179,6 +180,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   async fromOptions(options: PrivateKeyOptions) {
     this.fromSeed({
       seed: Buffer.from(options.seed),
+      hdPath: options.hdPath,
     });
     return this;
   }
@@ -187,43 +189,28 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     return new this().fromOptions(options);
   }
 
-  fromSeed({
-    seed,
-    hideRoot,
-    addressType,
-  }: {
-    seed: Uint8Array;
-    hideRoot?: boolean;
-    addressType?: AddressType;
-  }) {
+  fromSeed(opts: FromSeedOpts) {
     this.childIndex = 0;
-    this.seed = seed;
-    this.hdWallet = HDKey.fromMasterSeed(Buffer.from(seed));
+    this.seed = opts.seed;
+    this.hdWallet = HDKey.fromMasterSeed(Buffer.from(opts.seed));
+
+    if (opts.hdPath) {
+      this.hdPath = opts.hdPath;
+    }
+
     this.root = this.hdWallet.derive(this.hdPath);
-    this.hideRoot = hideRoot;
+    this.hideRoot = opts.hideRoot;
 
     this.privateKey = this.root.privateKey!;
     this.publicKey = this.root.publicKey!;
 
-    this.addressType = addressType;
+    this.addressType = opts.addressType;
 
     return this;
   }
 
-  static fromSeed({
-    seed,
-    hideRoot,
-    addressType,
-  }: {
-    seed: Uint8Array;
-    hideRoot?: boolean;
-    addressType?: AddressType;
-  }): HDPrivateKey {
-    return new this().fromSeed({
-      seed,
-      hideRoot,
-      addressType,
-    });
+  static fromSeed(opts: FromSeedOpts): HDPrivateKey {
+    return new this().fromSeed(opts);
   }
 
   toggleHideRoot(): void {
@@ -233,44 +220,24 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     }
   }
 
-  async fromMnemonic({
-    mnemonic,
-    passphrase,
-    hideRoot,
-    addressType,
-  }: {
-    mnemonic: string;
-    passphrase?: string;
-    hideRoot?: boolean;
-    addressType?: AddressType;
-  }): Promise<HDPrivateKey> {
-    const seed = await mnemonicToSeed(mnemonic, passphrase ?? "bells");
+  async fromMnemonic(opts: FromMnemonicOpts): Promise<HDPrivateKey> {
+    const seed = await mnemonicToSeed(
+      opts.mnemonic,
+      opts.passphrase ?? "bells"
+    );
+
     this.fromSeed({
       seed,
-      hideRoot,
-      addressType,
+      hideRoot: opts.hideRoot,
+      addressType: opts.addressType,
+      hdPath: opts.hdPath,
     });
 
     return this;
   }
 
-  static fromMnemonic({
-    mnemonic,
-    passphrase,
-    hideRoot,
-    addressType,
-  }: {
-    mnemonic: string;
-    passphrase?: string;
-    hideRoot?: boolean;
-    addressType?: AddressType;
-  }): Promise<HDPrivateKey> {
-    return new this().fromMnemonic({
-      mnemonic,
-      passphrase,
-      hideRoot,
-      addressType,
-    });
+  static fromMnemonic(opts: FromMnemonicOpts): Promise<HDPrivateKey> {
+    return new this().fromMnemonic(opts);
   }
 
   fromPrivateKey(_key: Uint8Array) {
@@ -285,13 +252,14 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     return this.accounts.length;
   }
 
-  serialize() {
+  serialize(): SerializedHDKey {
     if (this.childIndex !== 0)
       throw new Error("You should use only root wallet to serializing");
     return {
       numberOfAccounts: this.getChildCount(),
       seed: toHex(this.seed!),
       addressType: this.addressType!,
+      hdPath: this.hdPath !== DEFAULT_HD_PATH ? this.hdPath : undefined,
     };
   }
 
@@ -306,6 +274,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
       seed: fromHex(opts.seed),
       hideRoot: opts.hideRoot,
       addressType: opts.addressType,
+      hdPath: opts.hdPath,
     });
 
     root.addAccounts(opts.numberOfAccounts);
