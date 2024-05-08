@@ -155,7 +155,7 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
     this.initPair();
 
     const encoded = sha256(message);
-    return bytesToHex(this.pair!.sign(Buffer.from(encoded)));
+    return this.pair!.sign(Buffer.from(encoded)).toString("base64");
   }
 
   signPersonalMessage(address: string, message: string) {
