@@ -182,7 +182,6 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
       seed: Buffer.from(options.seed),
       hdPath: options.hdPath,
     });
-    this.network = options.network;
     return this;
   }
 
@@ -206,6 +205,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
     this.publicKey = this.root.publicKey!;
 
     this.addressType = opts.addressType;
+    this.network = opts.network;
 
     return this;
   }
@@ -276,6 +276,7 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
       hideRoot: opts.hideRoot,
       addressType: opts.addressType,
       hdPath: opts.hdPath,
+      network: opts.network,
     });
 
     root.addAccounts(opts.numberOfAccounts);

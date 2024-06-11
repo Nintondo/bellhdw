@@ -5,7 +5,6 @@ export type Base58String = string;
 export interface PrivateKeyOptions {
   seed: string;
   hdPath?: string;
-  network?: Network;
 }
 
 export interface FromSeedOpts {
@@ -13,6 +12,7 @@ export interface FromSeedOpts {
   hideRoot?: boolean;
   addressType?: AddressType;
   hdPath?: string;
+  network?: Network;
 }
 
 export interface FromMnemonicOpts {
@@ -31,6 +31,7 @@ export interface PublicKeyOptions
 
 interface SerializedBase {
   addressType: AddressType;
+  network?: Network;
 }
 
 export interface SerializedHDKey extends SerializedBase {
@@ -43,7 +44,6 @@ export interface SerializedHDKey extends SerializedBase {
 export interface SerializedSimpleKey extends SerializedBase {
   privateKey: string;
   isHex?: boolean;
-  network?: Network;
 }
 
 export type Hex = string;
