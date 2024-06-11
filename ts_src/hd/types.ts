@@ -1,10 +1,11 @@
-import { Psbt } from "belcoinjs-lib";
+import { Network, Psbt } from "belcoinjs-lib";
 
 export type Base58String = string;
 
 export interface PrivateKeyOptions {
   seed: string;
   hdPath?: string;
+  network?: Network;
 }
 
 export interface FromSeedOpts {
@@ -42,6 +43,7 @@ export interface SerializedHDKey extends SerializedBase {
 export interface SerializedSimpleKey extends SerializedBase {
   privateKey: string;
   isHex?: boolean;
+  network?: Network;
 }
 
 export type Hex = string;

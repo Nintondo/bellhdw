@@ -68,6 +68,7 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
     this.privateKey = wallet.privateKey;
     this.pair = wallet.pair;
     this.addressType = wallet.addressType;
+    this.network = state.network;
     return this;
   }
 
