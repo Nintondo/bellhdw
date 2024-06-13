@@ -5,6 +5,10 @@ export class BaseWallet {
   addressType?: AddressType;
   network?: Network;
 
+  setNetwork(network: Network) {
+    this.network = network;
+  }
+
   getAddress(publicKey: Uint8Array) {
     if (this.addressType === undefined)
       throw new Error("addressType of keyring is not specified");
