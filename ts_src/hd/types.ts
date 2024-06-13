@@ -91,6 +91,7 @@ export type Keyring<State> = {
     inputIndex: number;
     partialSig: { pubkey: Buffer; signature: Buffer }[];
   }[];
+  setNetwork(network: Network): void;
 };
 
 export const DISALLOWED_CHILD_METHODS: (keyof Keyring<any>)[] = [
