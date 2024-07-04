@@ -14,7 +14,7 @@ import type {
 } from "./types";
 import { BaseWallet } from "./base";
 import * as tinysecp from "bells-secp256k1";
-import { mnemonicToSeed } from "bip39";
+import { mnemonicToSeed } from "nintondo-bip39";
 import ECPairFactory, { ECPairInterface } from "belpair";
 import { Psbt } from "belcoinjs-lib";
 import HDKey from "browser-hdkey";
