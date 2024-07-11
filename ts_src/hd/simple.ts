@@ -4,7 +4,7 @@ import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
 import { BaseWallet } from "./base";
 import * as tinysecp from "bells-secp256k1";
 import ECPairFactory, { ECPairInterface } from "belpair";
-import { Network, Psbt } from "belcoinjs-lib";
+import { Psbt } from "belcoinjs-lib";
 import { sha256 } from "@noble/hashes/sha256";
 
 const ECPair = ECPairFactory(tinysecp);
@@ -15,10 +15,9 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
 
   private pair?: ECPairInterface;
 
-  constructor(privateKey: Uint8Array, network?: Network) {
+  constructor(privateKey: Uint8Array) {
     super();
 
-    this.network = network;
     this.privateKey = privateKey;
   }
 
@@ -82,9 +81,10 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
       pair = ECPair.fromWIF(state.privateKey);
     }
 
-    const wallet = new this(pair.privateKey!, state.network);
-    wallet.initPair();
+    const wallet = new this(pair.privateKey!);
+    wallet.network = state.network;
     wallet.addressType = state.addressType;
+    wallet.initPair();
     return wallet;
   }
 
