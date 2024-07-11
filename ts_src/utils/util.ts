@@ -88,3 +88,6 @@ export function parsePath(path: string): number[] {
 
   return result;
 }
+
+export const toXOnly = (pubKey: Buffer) =>
+  pubKey.length === 32 ? pubKey : pubKey.slice(1, 33);
