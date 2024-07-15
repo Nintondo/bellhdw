@@ -3,7 +3,7 @@ import {
   hexToBytes as fromHex,
 } from "@noble/hashes/utils";
 import { ZERO_KEY, ZERO_PRIVKEY } from "./common";
-import type {
+import {
   Keyring,
   PrivateKeyOptions,
   SerializedHDKey,
@@ -11,18 +11,55 @@ import type {
   ToSignInput,
   FromSeedOpts,
   FromMnemonicOpts,
+  AddressType,
 } from "./types";
 import { BaseWallet } from "./base";
 import * as tinysecp from "bells-secp256k1";
 import { mnemonicToSeed } from "nintondo-bip39";
 import ECPairFactory, { ECPairInterface } from "belpair";
-import { Psbt } from "belcoinjs-lib";
+import { Network, networks, Psbt, Signer } from "belcoinjs-lib";
 import HDKey from "browser-hdkey";
 import { sha256 } from "@noble/hashes/sha256";
+import { crypto as belCrypto } from "belcoinjs-lib";
+import { toXOnly } from "../utils/util";
 
 const ECPair = ECPairFactory(tinysecp);
 
 const DEFAULT_HD_PATH = "m/44'/0'/0'/0";
+
+function tapTweakHash(pubKey: Buffer, h: Buffer | undefined): Buffer {
+  return belCrypto.taggedHash(
+    "TapTweak",
+    Buffer.concat(h ? [pubKey, h] : [pubKey])
+  );
+}
+
+function tweakSigner(
+  signer: Signer,
+  opts: { network: Network; tweakHash?: Buffer }
+): Signer {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  let privateKey: Uint8Array | undefined = signer.privateKey!;
+  if (!privateKey) {
+    throw new Error("Private key is required for tweaking signer!");
+  }
+  if (signer.publicKey[0] === 3) {
+    privateKey = tinysecp.privateNegate(privateKey);
+  }
+
+  const tweakedPrivateKey = tinysecp.privateAdd(
+    privateKey,
+    tapTweakHash(toXOnly(signer.publicKey), opts.tweakHash)
+  );
+  if (!tweakedPrivateKey) {
+    throw new Error("Invalid tweaked private key!");
+  }
+
+  return ECPair.fromPrivateKey(Buffer.from(tweakedPrivateKey), {
+    network: opts.network,
+  });
+}
 
 class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   hideRoot?: boolean;
@@ -123,9 +160,17 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   signPsbt(psbt: Psbt, inputs: ToSignInput[]) {
     let account: ECPairInterface | undefined;
 
-    inputs.map((i) => {
-      account = this.findAccountByPk(i.publicKey);
-      psbt.signInput(i.index, account, i.sighashTypes);
+    inputs.forEach((input) => {
+      account = this.findAccountByPk(input.publicKey);
+      if (this.addressType === AddressType.P2TR) {
+        const signer = tweakSigner(account, {
+          network: this.network ?? networks.bellcoin,
+        });
+        psbt.signInput(input.index, signer, input.sighashTypes);
+      } else {
+        const signer = account;
+        psbt.signInput(input.index, signer, input.sighashTypes);
+      }
     });
 
     psbt.finalizeAllInputs();
@@ -133,7 +178,27 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
 
   signAllInputsInPsbt(psbt: Psbt, accountAddress: string) {
     const account = this.findAccount(accountAddress);
-    psbt.signAllInputs(account);
+
+    psbt.data.inputs.forEach((input, idx) => {
+      if (this.addressType === AddressType.P2TR) {
+        const signer = tweakSigner(account, {
+          network: this.network ?? networks.bellcoin,
+        });
+        psbt.signInput(
+          idx,
+          signer,
+          input.sighashType !== undefined ? [input.sighashType] : undefined
+        );
+      } else {
+        const signer = account;
+        psbt.signInput(
+          idx,
+          signer,
+          input.sighashType !== undefined ? [input.sighashType] : undefined
+        );
+      }
+    });
+
     return {
       signatures: psbt.data.inputs.map((i) => {
         if (
@@ -156,9 +221,17 @@ class HDPrivateKey extends BaseWallet implements Keyring<SerializedHDKey> {
   }[] {
     let account: ECPairInterface | undefined;
 
-    inputs.map((i) => {
-      account = this.findAccountByPk(i.publicKey);
-      psbt.signInput(i.index, account, i.sighashTypes);
+    inputs.forEach((input) => {
+      account = this.findAccountByPk(input.publicKey);
+      if (this.addressType === AddressType.P2TR) {
+        const signer = tweakSigner(account, {
+          network: this.network ?? networks.bellcoin,
+        });
+        psbt.signInput(input.index, signer, input.sighashTypes);
+      } else {
+        const signer = account;
+        psbt.signInput(input.index, signer, input.sighashTypes);
+      }
     });
 
     return psbt.data.inputs.map((f, i) => ({

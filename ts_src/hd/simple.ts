@@ -1,13 +1,54 @@
-import { Keyring, SerializedSimpleKey, ToSignInput } from "./types";
+import {
+  AddressType,
+  Keyring,
+  SerializedSimpleKey,
+  ToSignInput,
+} from "./types";
 import { ZERO_KEY, ZERO_PRIVKEY } from "./common";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
 import { BaseWallet } from "./base";
 import * as tinysecp from "bells-secp256k1";
 import ECPairFactory, { ECPairInterface } from "belpair";
-import { Psbt } from "belcoinjs-lib";
+import { Network, networks, Psbt, Signer } from "belcoinjs-lib";
 import { sha256 } from "@noble/hashes/sha256";
+import { crypto as belCrypto } from "belcoinjs-lib";
+import { toXOnly } from "../utils/util";
 
 const ECPair = ECPairFactory(tinysecp);
+
+function tapTweakHash(pubKey: Buffer, h: Buffer | undefined): Buffer {
+  return belCrypto.taggedHash(
+    "TapTweak",
+    Buffer.concat(h ? [pubKey, h] : [pubKey])
+  );
+}
+
+function tweakSigner(
+  signer: Signer,
+  opts: { network: Network; tweakHash?: Buffer }
+): Signer {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  let privateKey: Uint8Array | undefined = signer.privateKey!;
+  if (!privateKey) {
+    throw new Error("Private key is required for tweaking signer!");
+  }
+  if (signer.publicKey[0] === 3) {
+    privateKey = tinysecp.privateNegate(privateKey);
+  }
+
+  const tweakedPrivateKey = tinysecp.privateAdd(
+    privateKey,
+    tapTweakHash(toXOnly(signer.publicKey), opts.tweakHash)
+  );
+  if (!tweakedPrivateKey) {
+    throw new Error("Invalid tweaked private key!");
+  }
+
+  return ECPair.fromPrivateKey(Buffer.from(tweakedPrivateKey), {
+    network: opts.network,
+  });
+}
 
 class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
   privateKey: Uint8Array = ZERO_PRIVKEY;
@@ -106,9 +147,18 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
   signPsbt(psbt: Psbt, inputs: ToSignInput[]) {
     this.initPair();
 
-    for (let i of inputs) {
-      psbt.signInput(i.index, this.pair!, i.sighashTypes);
-    }
+    inputs.forEach((input) => {
+      const account = this.pair!;
+      if (this.addressType === AddressType.P2TR) {
+        const signer = tweakSigner(account, {
+          network: this.network ?? networks.bellcoin,
+        });
+        psbt.signInput(input.index, signer, input.sighashTypes);
+      } else {
+        const signer = account;
+        psbt.signInput(input.index, signer, input.sighashTypes);
+      }
+    });
     psbt.finalizeAllInputs();
   }
 
@@ -120,7 +170,26 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
       throw new Error(
         "Provided account address does not match the wallet's address"
       );
-    psbt.signAllInputs(this.pair!);
+
+    psbt.data.inputs.forEach((input, idx) => {
+      if (this.addressType === AddressType.P2TR) {
+        const signer = tweakSigner(this.pair!, {
+          network: this.network ?? networks.bellcoin,
+        });
+        psbt.signInput(
+          idx,
+          signer,
+          input.sighashType !== undefined ? [input.sighashType] : undefined
+        );
+      } else {
+        psbt.signInput(
+          idx,
+          this.pair!,
+          input.sighashType !== undefined ? [input.sighashType] : undefined
+        );
+      }
+    });
+
     return {
       signatures: psbt.data.inputs.map((i) => {
         if (
@@ -144,9 +213,17 @@ class HDSimpleKey extends BaseWallet implements Keyring<SerializedSimpleKey> {
     this.initPair();
     if (this.pair === undefined)
       throw new Error("Cannot sign inputs since pair is undefined");
-    for (let i of inputs) {
-      psbt.signInput(i.index, this.pair!, i.sighashTypes);
-    }
+    inputs.forEach((input) => {
+      if (this.addressType === AddressType.P2TR) {
+        const signer = tweakSigner(this.pair!, {
+          network: this.network ?? networks.bellcoin,
+        });
+        psbt.signInput(input.index, signer, input.sighashTypes);
+      } else {
+        const signer = this.pair!;
+        psbt.signInput(input.index, signer, input.sighashTypes);
+      }
+    });
     return psbt.data.inputs.map((f, i) => ({
       inputIndex: i,
       partialSig: f.partialSig?.flatMap((p) => p) ?? [],
